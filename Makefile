@@ -6,10 +6,35 @@ archypoint_tag = $(registry)/archypoint:master
 
 domain = archifiltre.io
 
-all: build deploy
+all: update
 
-deploy:
-	sudo docker stack deploy -c docker-compose.yml $(stack_tag)
+
+start: secrets initStack build deploy
+update: build deploy
+stop: removeStack removeSecrets removeHosts clean
+restart: stop start
+
+
+secrets:
+	dd if=/dev/urandom bs=1 count=64 2>/dev/null \
+		| base64 -w 0 \
+		| rev \
+		| cut -b 2- \
+		| rev \
+		| sudo docker secret create archapiJwt -
+
+removeSecrets:
+	sudo docker secret rm archapiJwt
+
+
+
+initStack:
+	sudo docker stack deploy -c init.yml $(stack_tag)
+
+removeStack:
+	sudo docker stack rm $(stack_tag)
+
+
 
 build: cheapExp archapi archypoint
 
@@ -39,19 +64,23 @@ archypoint:
 	sudo docker push $(archypoint_tag)
 
 
+deploy:
+	sudo docker stack deploy -c main.yml $(stack_tag)
+
+
+clean:
+	sudo docker container prune -f
 
 
 
-dev: createHost all
 
-createHost: removeHost
+hosts: removeHosts
 	echo "127.0.0.1 "$(domain)" #archapp#" | sudo tee -a /etc/hosts
 	echo "127.0.0.1 www."$(domain)" #archapp#" | sudo tee -a /etc/hosts
 	echo "127.0.0.1 api."$(domain)" #archapp#" | sudo tee -a /etc/hosts
 
-removeHost:
+removeHosts:
 	sudo sed -i -e '/.*#archapp#.*/d' /etc/hosts
 
-clean: removeHost
-	sudo docker stack rm $(stack_tag)
-	sudo docker container prune -f
+dev: hosts all
+
