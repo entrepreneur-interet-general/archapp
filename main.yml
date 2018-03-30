@@ -48,6 +48,10 @@ services:
       - "443:443"
     networks:
       - webnet
+    secrets:
+      - cert.pem
+      - privkey.pem
+      - fullchain.pem
 
   visualizer:
     image: dockersamples/visualizer:stable
@@ -66,4 +70,10 @@ networks:
 
 secrets:
   archapiJwt:
+    external: true
+  cert.pem:
+    external: true
+  privkey.pem:
+    external: true
+  fullchain.pem:
     external: true

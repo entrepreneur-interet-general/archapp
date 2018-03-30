@@ -11,7 +11,7 @@ all: update
 
 start: secrets initStack build deploy
 update: build deploy
-stop: removeStack removeSecrets removeHosts clean
+stop: removeStack cleanDev removeSecrets
 restart: stop start
 
 
@@ -22,10 +22,13 @@ secrets:
 		| cut -b 2- \
 		| rev \
 		| sudo docker secret create archapiJwt -
+	cat /tmp/privkey.pem | sudo docker secret create privkey.pem -
+	cat /tmp/cert.pem | sudo docker secret create cert.pem -
+	cat /tmp/fullchain.pem | sudo docker secret create fullchain.pem -
+
 
 removeSecrets:
-	sudo docker secret rm archapiJwt
-
+	sudo docker secret ls --quiet | xargs -r -n1 sudo docker secret rm
 
 
 initStack:
@@ -33,7 +36,7 @@ initStack:
 
 removeStack:
 	sudo docker stack rm $(stack_tag)
-
+	sudo docker container prune -f
 
 
 build: cheapExp archapi archypoint
@@ -55,7 +58,6 @@ archapi:
 archypoint:
 	sudo docker build \
 		--network=host \
-		--target=dev \
 		--build-arg domain=$(domain) \
 		--build-arg www_pass=www:80 \
 		--build-arg api_pass=api:3000 \
@@ -68,10 +70,6 @@ deploy:
 	sudo docker stack deploy -c main.yml $(stack_tag)
 
 
-clean:
-	sudo docker container prune -f
-
-
 
 
 hosts: removeHosts
@@ -82,5 +80,17 @@ hosts: removeHosts
 removeHosts:
 	sudo sed -i -e '/.*#archapp#.*/d' /etc/hosts
 
-dev: hosts all
+selfCert: removeSelfCert
+	openssl req -x509 -nodes -days 365 -newkey rsa:2048 -subj "/CN="$(domain) \
+	  -keyout /tmp/privkey.pem \
+	  -out /tmp/cert.pem
+	cp /tmp/cert.pem /tmp/fullchain.pem
 
+removeSelfCert:
+	rm -fr ./privkey.pem
+	rm -fr ./cert.pem
+	rm -fr ./fullchain.pem
+
+dev: hosts selfCert start
+
+cleanDev: removeHosts removeSelfCert
