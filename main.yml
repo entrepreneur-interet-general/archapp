@@ -1,0 +1,79 @@
+version: "3.1"
+services:
+
+  www:
+    image: 127.0.0.1:5000/cheap-exp:master
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 50M
+    ports:
+      - "8000:80"
+    networks:
+      - webnet
+
+  api:
+    image: 127.0.0.1:5000/archapi:master
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 50M
+    ports:
+      - "3000:3000"
+    networks:
+      - webnet
+    secrets:
+      - archapiJwt
+
+  entrypoint:
+    image: 127.0.0.1:5000/archypoint:master
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 50M
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - webnet
+    secrets:
+      - cert.pem
+      - privkey.pem
+      - fullchain.pem
+
+  visualizer:
+    image: dockersamples/visualizer:stable
+    ports:
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+    networks:
+      - webnet
+
+networks:
+  webnet:
+
+secrets:
+  archapiJwt:
+    external: true
+  cert.pem:
+    external: true
+  privkey.pem:
+    external: true
+  fullchain.pem:
+    external: true

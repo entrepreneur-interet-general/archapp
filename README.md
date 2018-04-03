@@ -1,14 +1,17 @@
 # archapp
 Deploy archifiltre app with docker stack
 
-To start the app :
+To (start\|update\|stop\|restart) the app :
 
 ```bash
-make deploy && make
+# default target is update
+make (start|update|stop|restart)
 ```
 
-To update the app :
+To start the app in local/dev mode, instead of **make start**, use :
 
 ```bash
-make
+make dev
 ```
+
+Don't forget to change the **domain** makefile variable with your domain name.
