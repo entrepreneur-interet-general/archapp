@@ -53,7 +53,7 @@ archapi:
 	sudo docker build \
 		--network=host \
 		--tag=$(archapi_tag) \
-		https://github.com/jeanbaptisteassouad/archapi.git#alpha-api
+		https://github.com/jeanbaptisteassouad/archapi.git#master
 	sudo docker push $(archapi_tag)
 
 archypoint:
@@ -63,7 +63,7 @@ archypoint:
 		--build-arg www_pass=www:80 \
 		--build-arg api_pass=api:3000 \
 		--tag=$(archypoint_tag) \
-		https://github.com/entrepreneur-interet-general/archypoint.git#remove-dep
+		https://github.com/entrepreneur-interet-general/archypoint.git#master
 	sudo docker push $(archypoint_tag)
 
 
