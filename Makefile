@@ -5,6 +5,7 @@ archapi_tag = $(registry)/archapi:master
 archypoint_tag = $(registry)/archypoint:master
 
 domain = archifiltre.io
+certPath = ../archifiltre.io
 
 all: update
 
@@ -22,9 +23,9 @@ secrets:
 		| cut -b 2- \
 		| rev \
 		| sudo docker secret create archapiJwt -
-	cat /tmp/privkey.pem | sudo docker secret create privkey.pem -
-	cat /tmp/cert.pem | sudo docker secret create cert.pem -
-	cat /tmp/fullchain.pem | sudo docker secret create fullchain.pem -
+	cat $(certPath)/private.key | sudo docker secret create privkey.pem -
+	cat $(certPath)/certificate.crt | sudo docker secret create cert.pem -
+	cat $(certPath)/ca_bundle.crt | sudo docker secret create fullchain.pem -
 
 
 removeSecrets:
@@ -80,17 +81,12 @@ hosts: removeHosts
 removeHosts:
 	sudo sed -i -e '/.*#archapp#.*/d' /etc/hosts
 
-selfCert: removeSelfCert
+selfCert:
 	openssl req -x509 -nodes -days 365 -newkey rsa:2048 -subj "/CN="$(domain) \
 	  -keyout /tmp/privkey.pem \
 	  -out /tmp/cert.pem
 	cp /tmp/cert.pem /tmp/fullchain.pem
 
-removeSelfCert:
-	rm -fr ./privkey.pem
-	rm -fr ./cert.pem
-	rm -fr ./fullchain.pem
+dev: hosts start
 
-dev: hosts selfCert start
-
-cleanDev: removeHosts removeSelfCert
+cleanDev: removeHosts
